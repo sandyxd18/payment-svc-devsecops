@@ -1,0 +1,33 @@
+// prisma/schema.prisma
+
+generator client {
+  provider      = "prisma-client-js"
+  binaryTargets = ["native", "linux-musl-openssl-3.0.x"]
+}
+
+datasource db {
+  provider = "postgresql"
+  url      = env("DATABASE_URL")
+}
+
+enum PaymentStatus {
+  PENDING
+  PAID
+  EXPIRED
+}
+
+model Payment {
+  id         String        @id @default(uuid())
+  order_id   String
+  amount     Decimal       @db.Decimal(12, 2)
+  qr_payload String        @db.Text
+  status     PaymentStatus @default(PENDING)
+  expires_at DateTime
+  created_at DateTime      @default(now())
+  updated_at DateTime      @updatedAt
+
+  @@index([order_id])
+  @@index([status])
+  @@index([expires_at])
+  @@map("payments")
+}
