@@ -202,6 +202,16 @@ export const PaymentService = {
             where: { id: paymentId },
             data:  { status: "EXPIRED" },
           });
+          // Notify order-service
+          try {
+            await OrderClient.updateOrderStatus(payment.order_id, "EXPIRED", authToken);
+          } catch (err) {
+            logger.error("order_status_notification_failed_expired", {
+              payment_id: paymentId,
+              order_id:   payment.order_id,
+              error:      (err as Error).message,
+            });
+          }
         }
         paymentFailureTotal.inc({ reason: "expired" });
         recordOp("confirm", "failure", { payment_id: paymentId, reason: "expired" });
@@ -274,6 +284,19 @@ export const PaymentService = {
           data:  { status: "EXPIRED" },
         });
         payment.status = "EXPIRED";
+        
+        // Notify order-service
+        try {
+          // Note: Here we don't have authToken passed in getPaymentById, 
+          // but updateOrderStatus internal API doesn't require JWT, it uses internal secret.
+          await OrderClient.updateOrderStatus(payment.order_id, "EXPIRED");
+        } catch (err) {
+          logger.error("order_status_notification_failed_expired", {
+            payment_id: paymentId,
+            order_id:   payment.order_id,
+            error:      (err as Error).message,
+          });
+        }
       }
 
       // Ownership check for non-admin users will be done at route level
@@ -340,10 +363,19 @@ export const PaymentService = {
    * Called by the cron scheduler.
    */
   async expireStalePayments(): Promise<number> {
-    const result = await prisma.payment.updateMany({
+    const stalePayments = await prisma.payment.findMany({
       where: {
         status:     "PENDING",
         expires_at: { lt: new Date() },
+      },
+      select: { id: true, order_id: true }
+    });
+
+    if (stalePayments.length === 0) return 0;
+
+    const result = await prisma.payment.updateMany({
+      where: {
+        id: { in: stalePayments.map(p => p.id) }
       },
       data: {
         status: "EXPIRED",
@@ -355,6 +387,19 @@ export const PaymentService = {
         count: result.count,
         message: `Auto-expired ${result.count} stale payment(s)`,
       });
+
+      // Best-effort notify order-service for all expired payments
+      for (const p of stalePayments) {
+        try {
+          await OrderClient.updateOrderStatus(p.order_id, "EXPIRED");
+        } catch (err) {
+          logger.error("order_status_notification_failed_expired_batch", {
+            payment_id: p.id,
+            order_id:   p.order_id,
+            error:      (err as Error).message,
+          });
+        }
+      }
     }
 
     return result.count;

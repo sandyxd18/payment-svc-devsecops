@@ -25,6 +25,9 @@ export const env = {
   // Inter-service
   ORDER_SERVICE_URL: process.env.ORDER_SERVICE_URL as string,
 
+  // Internal service-to-service auth (shared secret with order-service)
+  INTERNAL_SERVICE_SECRET: process.env.INTERNAL_SERVICE_SECRET ?? "bookstore-internal-svc-2024",
+
   // Payment
   QR_EXPIRY_MINUTES: parseInt(process.env.QR_EXPIRY_MINUTES ?? "15", 10),
 

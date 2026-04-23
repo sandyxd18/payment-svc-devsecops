@@ -111,18 +111,19 @@ export const OrderClient = {
   /**
    * updateOrderStatus
    * Notifies order-service to update the order status after payment.
+   * Uses internal service-to-service secret (not JWT) for /internal-status endpoint.
    */
   async updateOrderStatus(
     orderId: string,
     status: string,
-    authToken?: string
+    _authToken?: string // kept for signature compatibility, not used anymore
   ): Promise<void> {
-    const headers: Record<string, string> = {};
-    if (authToken) {
-      headers["Authorization"] = `Bearer ${authToken}`;
-    }
+    // Use internal /internal-status endpoint with x-internal-secret header
+    const headers: Record<string, string> = {
+      "x-internal-secret": env.INTERNAL_SERVICE_SECRET,
+    };
 
-    const res = await fetchWithMetrics("PATCH", `/orders/${orderId}/status`, {
+    const res = await fetchWithMetrics("PATCH", `/orders/${orderId}/internal-status`, {
       headers,
       body: JSON.stringify({ status }),
     });
