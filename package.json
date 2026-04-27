@@ -35,5 +35,8 @@
     "@types/jsonwebtoken": "^9.0.6",
     "@types/qrcode": "^1.5.5",
     "prisma": "^5.14.0"
+  },
+  "overrides": {
+    "uuid": "14.0.0"
   }
 }
