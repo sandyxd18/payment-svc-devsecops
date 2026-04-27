@@ -94,6 +94,9 @@ PORT=8000
 NODE_ENV="production"
 QR_EXPIRY_MINUTES=15
 
+# Internal service-to-service secret (shared with order-service)
+INTERNAL_SERVICE_SECRET="your-internal-service-secret-here"
+
 # Observability
 SERVICE_NAME="payment-service"
 SERVICE_VERSION="1.0.0"
