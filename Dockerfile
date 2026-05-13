@@ -7,13 +7,9 @@ WORKDIR /app
 
 RUN apk add --no-cache openssl
 
-COPY package.json bun.lockb* ./
+COPY package.json bun.lock* bun.lockb* ./
 
-RUN if [ -f bun.lockb ]; then \
-      bun install --frozen-lockfile; \
-    else \
-      bun install; \
-    fi
+RUN rm -f bun.lock && bun install
 
 # ─────────────────────────────────────────────────────────────────────────────
 # Stage 2 — builder
